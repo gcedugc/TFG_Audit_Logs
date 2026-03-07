@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard TFG - Auditoría Blockchain</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    },
+                    keyframes: {
+                        'fade-in-up': {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        'slide-in': {
+                            '0%': { opacity: '0', transform: 'scale(0.95) translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+                        },
+                        'glow-pulse': {
+                            '0%, 100%': { boxShadow: '0 0 20px rgba(16,185,129,0.15)' },
+                            '50%': { boxShadow: '0 0 40px rgba(16,185,129,0.3)' },
+                        },
+                        'scan-line': {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' },
+                        },
+                        'bounce-in': {
+                            '0%': { transform: 'scale(0.3)', opacity: '0' },
+                            '50%': { transform: 'scale(1.02)' },
+                            '70%': { transform: 'scale(0.97)' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        'count-up': {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                    },
+                    animation: {
+                        'fade-in-up': 'fade-in-up 0.5s ease-out',
+                        'slide-in': 'slide-in 0.4s ease-out',
+                        'glow-pulse': 'glow-pulse 3s ease-in-out infinite',
+                        'scan-line': 'scan-line 2s linear infinite',
+                        'bounce-in': 'bounce-in 0.5s cubic-bezier(0.68,-0.55,0.265,1.55)',
+                        'count-up': 'count-up 0.4s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Scrollbar personalizado */
+        #log-console::-webkit-scrollbar { width: 6px; }
+        #log-console::-webkit-scrollbar-track { background: transparent; }
+        #log-console::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        #log-console::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .modal-body::-webkit-scrollbar { width: 6px; }
+        .modal-body::-webkit-scrollbar-track { background: transparent; }
+        .modal-body::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        /* Efecto grid de fondo */
+        .bg-grid {
+            background-image:
+                linear-gradient(rgba(148,163,184,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148,163,184,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Hover glow para tarjetas */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        }
+
+        /* Gradiente animado para el botón */
+        .btn-gradient {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed, #4f46e5);
+            background-size: 200% 200%;
+            animation: gradient-shift 3s ease infinite;
+        }
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Log entry hover */
+        .log-entry {
+            transition: all 0.15s ease;
+        }
+        .log-entry:hover {
+            background: rgba(30, 41, 59, 0.8);
+            padding-left: 16px;
+        }
+
+        /* Pulse ring para status */
+        .pulse-ring {
+            position: relative;
+        }
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            animation: pulse-ring 2s ease-out infinite;
+            opacity: 0;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans overflow-x-hidden bg-grid">
+
+    <!-- Navbar -->
+    <nav class="glass border-b border-slate-800/80 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">
+                    <i data-lucide="shield-check" class="text-emerald-400 w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide">
+                        Audit<span class="text-emerald-400">Chain</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-500 font-medium tracking-wider uppercase">Verificador de Logs en Blockchain</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 rounded-lg border border-slate-800 text-xs">
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-ring text-emerald-500"></div>
+                    <span class="text-slate-400 font-mono font-medium">Node Online</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 rounded-lg border border-slate-800 text-xs">
+                    <i data-lucide="boxes" class="w-3.5 h-3.5 text-violet-400"></i>
+                    <span class="text-slate-400 font-mono font-medium">Ganache Local</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-6 py-8 space-y-6">
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900/60 rounded-xl border border-slate-800/80 p-5 card-hover">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Logs Monitorizados</span>
+                    <div class="bg-blue-500/10 p-1.5 rounded-lg">
+                        <i data-lucide="scroll-text" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                </div>
+                <p id="stat-total-logs" class="text-3xl font-bold text-white font-mono">--</p>
+                <p class="text-xs text-slate-500 mt-1">Actualizados en tiempo real</p>
+            </div>
+
+            <div class="bg-slate-900/60 rounded-xl border border-slate-800/80 p-5 card-hover">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado del Sistema</span>
+                    <div class="bg-emerald-500/10 p-1.5 rounded-lg">
+                        <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                </div>
+                <p id="stat-status" class="text-3xl font-bold text-emerald-400 font-mono">Activo</p>
+                <p class="text-xs text-slate-500 mt-1">Escuchando eventos</p>
+            </div>
+
+            <div class="bg-slate-900/60 rounded-xl border border-slate-800/80 p-5 card-hover">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Última Auditoría</span>
+                    <div class="bg-violet-500/10 p-1.5 rounded-lg">
+                        <i data-lucide="clock" class="w-4 h-4 text-violet-400"></i>
+                    </div>
+                </div>
+                <p id="stat-last-audit" class="text-3xl font-bold text-white font-mono">--:--</p>
+                <p id="stat-last-audit-label" class="text-xs text-slate-500 mt-1">Sin auditorías aún</p>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Log Console (2/3) -->
+            <div class="lg:col-span-2 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-semibold flex items-center gap-2 text-slate-300">
+                        <i data-lucide="terminal" class="text-blue-400 w-4 h-4"></i>
+                        Flujo de Logs en Tiempo Real
+                    </h2>
+                    <div class="flex items-center gap-1.5 text-[11px] font-mono text-emerald-500/70">
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        streaming
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 rounded-xl border border-slate-800/80 overflow-hidden shadow-2xl shadow-black/20">
+                    <!-- Terminal header -->
+                    <div class="bg-slate-900 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex gap-1.5">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-600">sistema.log</span>
+                    </div>
+                    <div id="log-console"
+                        class="p-4 h-[420px] overflow-y-auto font-mono text-[13px] leading-relaxed text-emerald-400/90 space-y-0.5 scroll-smooth">
+                        <div class="text-slate-600 italic text-xs">Conectando con el sistema honeypot...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel (1/3) -->
+            <div class="space-y-3">
+                <h2 class="text-sm font-semibold flex items-center gap-2 text-slate-300">
+                    <i data-lucide="scan-search" class="text-violet-400 w-4 h-4"></i>
+                    Panel de Auditoría
+                </h2>
+
+                <div class="bg-slate-900/80 rounded-xl border border-slate-800/80 p-6 space-y-5">
+                    <div>
+                        <h3 class="text-base font-bold text-white mb-2">Verificación Blockchain</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Compara la integridad de todos los logs registrados contra las raíces de Merkle almacenadas en el Smart Contract.
+                        </p>
+                    </div>
+
+                    <!-- Proceso visual -->
+                    <div class="space-y-2.5 py-2">
+                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                            <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 text-[10px] font-bold text-slate-400">1</div>
+                            <span>Lectura de logs del disco</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                            <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 text-[10px] font-bold text-slate-400">2</div>
+                            <span>Recálculo del Merkle Tree</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                            <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 text-[10px] font-bold text-slate-400">3</div>
+                            <span>Comparación con Smart Contract</span>
+                        </div>
+                    </div>
+
+                    <button onclick="auditarAhora()" id="btn-audit"
+                        class="w-full btn-gradient hover:brightness-110 active:scale-[0.98] text-white font-semibold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-indigo-900/30 text-sm uppercase tracking-wider">
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        Ejecutar Auditoría
+                    </button>
+
+                    <!-- Progress bar (hidden by default) -->
+                    <div id="audit-progress" class="hidden space-y-2">
+                        <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                        </div>
+                        <p id="progress-text" class="text-[11px] text-slate-500 font-mono text-center">Iniciando verificación...</p>
+                    </div>
+                </div>
+
+                <!-- Quick info card -->
+                <div class="bg-slate-900/40 rounded-xl border border-slate-800/50 p-4">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="info" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Cada lote de logs genera un <span class="text-slate-400">Merkle Root</span> que se almacena inmutablemente en la blockchain. Cualquier modificación posterior será detectada.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Results Section -->
+        <div id="audit-section" class="hidden">
+            <div id="status-card" class="rounded-xl border transition-all duration-500">
+                <!-- Se rellena con JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/50 mt-12">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center text-xs text-slate-600">
+            <span>TFG - Sistema de Auditoría de Logs mediante Blockchain</span>
+            <div class="flex items-center gap-1">
+                <i data-lucide="lock" class="w-3 h-3"></i>
+                SHA-256 + Merkle Tree + Solidity
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============================================== -->
+    <!-- MODAL POP UP (HIDDEN BY DEFAULT)               -->
+    <!-- ============================================== -->
+    <div id="alert-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/85 backdrop-blur-md transition-opacity" onclick="cerrarModal()"></div>
+
+        <!-- Modal Card -->
+        <div class="relative bg-slate-950 border border-red-500/40 rounded-2xl shadow-[0_0_80px_rgba(220,38,38,0.25)] w-full max-w-5xl max-h-[85vh] flex flex-col animate-bounce-in overflow-hidden m-4">
+
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-red-950/80 to-slate-950 p-5 border-b border-red-500/20 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="bg-red-500/15 p-2.5 rounded-xl border border-red-500/30">
+                        <i data-lucide="shield-alert" class="w-7 h-7 text-red-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white tracking-wide">Alerta de Integridad</h2>
+                        <p class="text-red-400/80 text-xs font-semibold flex items-center gap-1.5 mt-0.5 uppercase tracking-wider">
+                            <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                            Manipulación detectada en los logs
+                        </p>
+                    </div>
+                </div>
+                <button onclick="cerrarModal()"
+                    class="text-slate-400 hover:text-white hover:bg-slate-800 p-2 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Summary Bar -->
+            <div class="px-6 py-4 bg-slate-900/50 border-b border-slate-800/50 flex gap-4 flex-wrap">
+                <div class="flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5 rounded-lg min-w-[160px]">
+                    <div class="bg-emerald-500/10 p-1.5 rounded-md">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                    </div>
+                    <div>
+                        <span class="text-emerald-400/70 uppercase text-[10px] font-bold tracking-wider block">Verificados OK</span>
+                        <p id="modal-valid-count" class="text-2xl font-bold text-emerald-400 font-mono">0</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-red-500/5 border border-red-500/20 px-4 py-2.5 rounded-lg min-w-[160px]">
+                    <div class="bg-red-500/10 p-1.5 rounded-md">
+                        <i data-lucide="alert-octagon" class="w-4 h-4 text-red-500"></i>
+                    </div>
+                    <div>
+                        <span class="text-red-400/70 uppercase text-[10px] font-bold tracking-wider block">Incidencias</span>
+                        <p id="modal-count" class="text-2xl font-bold text-red-400 font-mono">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body (Scrollable) -->
+            <div class="p-6 overflow-y-auto flex-1 modal-body space-y-4">
+                <div class="flex items-center gap-2 text-slate-500 text-xs uppercase font-semibold tracking-wider">
+                    <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
+                    Detalle de anomalías detectadas
+                </div>
+
+                <div id="modal-evidence-container" class="grid grid-cols-1 gap-4">
+                    <!-- Las tarjetas de error se inyectan aquí -->
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 bg-slate-900/80 border-t border-slate-800/50 flex justify-end gap-3">
+                <button onclick="cerrarModal()"
+                    class="px-5 py-2.5 rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium">
+                    Cerrar
+                </button>
+                <button onclick="window.print()"
+                    class="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/30 transition-colors text-sm font-medium flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Exportar Informe
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ── 1. Logs en tiempo real ──
+        let logCount = 0;
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                const data = await res.json();
+
+                const consoleDiv = document.getElementById('log-console');
+                const newCount = data.logs.length;
+
+                consoleDiv.innerHTML = data.logs.map((l, i) => `
+                    <div class="log-entry px-3 py-0.5 rounded cursor-default border-l-2 border-transparent hover:border-emerald-500/50">
+                        <span class="text-slate-600 select-none mr-3 text-[11px]">${String(i + 1).padStart(3, '0')}</span>
+                        <span class="tracking-wide">${escapeHtml(l)}</span>
+                    </div>`).join('');
+
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+
+                // Actualizar stats
+                if (newCount !== logCount) {
+                    logCount = newCount;
+                    const statEl = document.getElementById('stat-total-logs');
+                    statEl.textContent = logCount;
+                    statEl.classList.add('animate-count-up');
+                    setTimeout(() => statEl.classList.remove('animate-count-up'), 400);
+                }
+            } catch (e) {
+                console.error("Error fetching logs", e);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        setInterval(fetchLogs, 1500);
+        fetchLogs();
+
+        // ── 2. Modal ──
+        function abrirModal() {
+            document.getElementById('alert-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function cerrarModal() {
+            document.getElementById('alert-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+            const btn = document.getElementById('btn-audit');
+            btn.disabled = false;
+            btn.classList.remove('opacity-60', 'cursor-wait');
+            btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Ejecutar Auditoría';
+            lucide.createIcons();
+        }
+
+        // ── 3. Auditoría ──
+        async function auditarAhora() {
+            const btn = document.getElementById('btn-audit');
+            const section = document.getElementById('audit-section');
+            const statusCard = document.getElementById('status-card');
+            const progressDiv = document.getElementById('audit-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            // Loading state
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'cursor-wait');
+            btn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i> Analizando...';
+            lucide.createIcons();
+
+            section.classList.add('hidden');
+            progressDiv.classList.remove('hidden');
+
+            // Simulate progress
+            const steps = [
+                { pct: 20, text: 'Leyendo logs del disco...' },
+                { pct: 50, text: 'Recalculando árboles Merkle...' },
+                { pct: 75, text: 'Consultando Smart Contract...' },
+                { pct: 90, text: 'Comparando raíces...' },
+            ];
+
+            for (const step of steps) {
+                progressBar.style.width = step.pct + '%';
+                progressText.textContent = step.text;
+                await new Promise(r => setTimeout(r, 350));
+            }
+
+            try {
+                const res = await fetch('/api/audit');
+                const data = await res.json();
+
+                progressBar.style.width = '100%';
+                progressText.textContent = 'Verificación completada';
+                await new Promise(r => setTimeout(r, 300));
+                progressDiv.classList.add('hidden');
+                progressBar.style.width = '0%';
+
+                // Actualizar stat de última auditoría
+                const now = new Date();
+                document.getElementById('stat-last-audit').textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('stat-last-audit-label').textContent =
+                    data.summary.corrupt === 0 ? 'Sin incidencias' : `${data.summary.corrupt} incidencia(s)`;
+
+                if (data.summary.corrupt === 0) {
+                    // ── ÉXITO ──
+                    section.classList.remove('hidden');
+                    statusCard.className = "rounded-xl p-8 border border-emerald-500/30 bg-emerald-950/20 text-center animate-fade-in-up";
+                    statusCard.innerHTML = `
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 animate-glow-pulse">
+                                <i data-lucide="shield-check" class="w-14 h-14 text-emerald-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white mt-2">Sistema Íntegro</h2>
+                            <p class="text-emerald-300/70 text-sm max-w-md">Todos los logs coinciden con la huella digital almacenada en la blockchain. No se han detectado manipulaciones.</p>
+                            <div class="mt-4 flex gap-6 text-xs text-slate-400">
+                                <span class="flex items-center gap-1.5"><i data-lucide="file-check" class="w-3.5 h-3.5 text-emerald-500"></i> ${data.summary.total} logs analizados</span>
+                                <span class="flex items-center gap-1.5"><i data-lucide="blocks" class="w-3.5 h-3.5 text-violet-400"></i> ${data.summary.batches_verified} lotes verificados</span>
+                            </div>
+                        </div>
+                    `;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-60', 'cursor-wait');
+                    btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Ejecutar Auditoría';
+                    lucide.createIcons();
+
+                } else {
+                    // ── ERROR: Abrir Modal ──
+                    document.getElementById('modal-valid-count').innerText = data.summary.valid;
+                    document.getElementById('modal-count').innerText = data.summary.corrupt;
+
+                    const evidenceContainer = document.getElementById('modal-evidence-container');
+                    evidenceContainer.innerHTML = data.details.map((err, idx) => `
+                        <div class="bg-slate-900/80 rounded-xl overflow-hidden border border-red-500/20 hover:border-red-500/40 transition-all animate-fade-in-up" style="animation-delay: ${idx * 80}ms">
+                            <!-- Header -->
+                            <div class="px-5 py-3 border-b border-slate-800/80 flex justify-between items-center">
+                                <span class="text-slate-300 font-semibold text-sm flex items-center gap-2">
+                                    <i data-lucide="file-warning" class="w-4 h-4 text-red-400"></i>
+                                    Lote #${err.batch_id}
+                                </span>
+                                <span class="bg-red-500/15 text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border border-red-500/20">
+                                    Manipulado
+                                </span>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <div>
+                                    <div class="text-slate-500 text-[11px] uppercase mb-1.5 font-semibold tracking-wider flex items-center gap-1">
+                                        <i data-lucide="history" class="w-3 h-3"></i> Contenido Original
+                                    </div>
+                                    <div class="bg-black/50 p-3.5 rounded-lg font-mono text-sm border-l-4 border-amber-500/60">
+                                        <p class="text-amber-300/90 break-all select-all leading-relaxed">${escapeHtml(err.original_content)}</p>
+                                    </div>
+                                </div>
+                                <div class="bg-red-950/20 p-3 rounded-lg border border-red-500/10 flex items-start gap-2.5">
+                                    <i data-lucide="info" class="w-4 h-4 text-red-400/60 shrink-0 mt-0.5"></i>
+                                    <p class="text-[11px] text-red-200/60 leading-snug">
+                                        El hash de este log no coincide con la Raíz de Merkle almacenada en el Smart Contract, indicando modificación posterior al registro.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    lucide.createIcons();
+                    abrirModal();
+                }
+
+            } catch (e) {
+                console.error(e);
+                progressDiv.classList.add('hidden');
+                progressBar.style.width = '0%';
+
+                // Error toast
+                const section = document.getElementById('audit-section');
+                section.classList.remove('hidden');
+                statusCard.className = "rounded-xl p-6 border border-red-500/30 bg-red-950/20 text-center animate-fade-in-up";
+                statusCard.innerHTML = `
+                    <div class="flex items-center justify-center gap-3">
+                        <i data-lucide="wifi-off" class="w-5 h-5 text-red-400"></i>
+                        <p class="text-red-300 text-sm font-medium">Error de conexión con el servidor</p>
+                    </div>
+                `;
+                btn.disabled = false;
+                btn.classList.remove('opacity-60', 'cursor-wait');
+                btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Ejecutar Auditoría';
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+
+</html>
