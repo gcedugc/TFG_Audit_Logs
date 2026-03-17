@@ -17,7 +17,8 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 LOG_FILE = os.path.join(BASE_DIR, "Logs", "sistema.log")
 CONFIG_FILE = os.path.join(BASE_DIR, "contract_config.json")
 PROOF_FILE = os.path.join(BASE_DIR, "Logs", "merkle_proofs.json")
-GANACHE_URL = os.getenv("GANACHE_URL")
+# RPC_URL lo establece start.py; si no existe, usar GANACHE_URL como fallback
+RPC_URL = os.getenv("RPC_URL") or os.getenv("GANACHE_URL")
 
 # Colores para la terminal
 class Colors:
@@ -59,10 +60,15 @@ def verificar_integridad(return_data=False):
         "details": []
     }
 
-    web3 = Web3(Web3.HTTPProvider(GANACHE_URL))
-    if not web3.is_connected(): return results
+    web3 = Web3(Web3.HTTPProvider(RPC_URL))
+    if not web3.is_connected():
+        if not return_data: print(f"{Colors.FAIL}[!] No se puede conectar al nodo ({RPC_URL}){Colors.ENDC}")
+        results["summary"]["error"] = "No se puede conectar al nodo blockchain"
+        return results
     contrato = cargar_contrato(web3)
-    if not contrato: return results
+    if not contrato:
+        results["summary"]["error"] = "No se encuentra el contrato desplegado"
+        return results
 
     # Cargar pruebas locales (formato JSONL)
     proofs = cargar_proofs()

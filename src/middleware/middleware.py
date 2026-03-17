@@ -19,8 +19,10 @@ LOG_FILE = os.path.join(BASE_DIR, "Logs", "sistema.log")
 CONFIG_FILE = os.path.join(BASE_DIR, "contract_config.json")
 PROOF_FILE = os.path.join(BASE_DIR, "Logs", "merkle_proofs.json")
 
-GANACHE_URL = os.getenv("GANACHE_URL")
+# RPC_URL lo establece start.py; si no existe, usar GANACHE_URL como fallback
+RPC_URL = os.getenv("RPC_URL") or os.getenv("GANACHE_URL")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
+IS_LOCAL = "127.0.0.1" in RPC_URL or "localhost" in RPC_URL
 
 def cargar_contrato(web3):
     if not os.path.exists(CONFIG_FILE):
@@ -39,11 +41,20 @@ def anclar_lote(web3, contrato, merkle_root, log_count, batch_range, account_add
         # Convertir hash hex string a bytes32 para el contrato
         root_bytes = bytes.fromhex(merkle_root)
 
-        tx = contrato.functions.saveBatchRoot(root_bytes, log_count, batch_range).build_transaction({
+        tx_params = {
             'from': account_address,
             'nonce': web3.eth.get_transaction_count(account_address),
-            'gasPrice': web3.eth.gas_price
-        })
+        }
+
+        if IS_LOCAL:
+            tx_params['gasPrice'] = web3.eth.gas_price
+        else:
+            latest_block = web3.eth.get_block("latest")
+            base_fee = latest_block.get("baseFeePerGas", 0)
+            tx_params['maxFeePerGas'] = base_fee * 2 + web3.to_wei(2, "gwei")
+            tx_params['maxPriorityFeePerGas'] = web3.to_wei(2, "gwei")
+
+        tx = contrato.functions.saveBatchRoot(root_bytes, log_count, batch_range).build_transaction(tx_params)
 
         signed_tx = web3.eth.account.sign_transaction(tx, PRIVATE_KEY)
         tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
@@ -63,15 +74,18 @@ def guardar_prueba_local(batch_data):
 def main():
     print("--- INICIANDO SISTEMA DE AUDITORÍA (MERKLE BATCHING) ---")
 
-    web3 = Web3(Web3.HTTPProvider(GANACHE_URL))
+    web3 = Web3(Web3.HTTPProvider(RPC_URL))
     if not web3.is_connected():
-        print("[!] No se puede conectar a Ganache.")
+        print("[!] No se puede conectar al nodo.")
         return
+
+    network_name = "Ganache (local)" if IS_LOCAL else f"Sepolia (Chain ID: {web3.eth.chain_id})"
 
     account = web3.eth.account.from_key(PRIVATE_KEY)
     contrato = cargar_contrato(web3)
     if not contrato: return
 
+    print(f"[*] Red: {network_name}")
     print(f"[*] Auditor: {account.address}")
     print(f"[*] Modo: Agrupación por Merkle Trees (Ahorro de gas y privacidad)")
 

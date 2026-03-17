@@ -496,7 +496,25 @@
                 document.getElementById('stat-last-audit-label').textContent =
                     data.summary.corrupt === 0 ? 'Sin incidencias' : `${data.summary.corrupt} incidencia(s)`;
 
-                if (data.summary.corrupt === 0) {
+                if (data.summary.error) {
+                    // ── ERROR DE CONEXIÓN / CONFIG ──
+                    section.classList.remove('hidden');
+                    statusCard.className = "rounded-xl p-8 border border-amber-500/30 bg-amber-950/20 text-center animate-fade-in-up";
+                    statusCard.innerHTML = `
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20">
+                                <i data-lucide="alert-triangle" class="w-14 h-14 text-amber-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white mt-2">No se pudo verificar</h2>
+                            <p class="text-amber-300/70 text-sm max-w-md">${escapeHtml(data.summary.error)}</p>
+                        </div>
+                    `;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-60', 'cursor-wait');
+                    btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Ejecutar Auditoría';
+                    lucide.createIcons();
+
+                } else if (data.summary.corrupt === 0) {
                     // ── ÉXITO ──
                     section.classList.remove('hidden');
                     statusCard.className = "rounded-xl p-8 border border-emerald-500/30 bg-emerald-950/20 text-center animate-fade-in-up";

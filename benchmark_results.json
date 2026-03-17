@@ -1,0 +1,52 @@
+[
+  {
+    "batch_size": 1,
+    "logs": 52,
+    "batches": 52,
+    "avg_gas": 211170,
+    "total_txs": 54,
+    "audit_time_ms": 468,
+    "valid": 53,
+    "corrupt": 0
+  },
+  {
+    "batch_size": 5,
+    "logs": 51,
+    "batches": 10,
+    "avg_gas": 219778,
+    "total_txs": 66,
+    "audit_time_ms": 115,
+    "valid": 47,
+    "corrupt": 0
+  },
+  {
+    "batch_size": 10,
+    "logs": 51,
+    "batches": 8,
+    "avg_gas": 226129,
+    "total_txs": 76,
+    "audit_time_ms": 97,
+    "valid": 51,
+    "corrupt": 0
+  },
+  {
+    "batch_size": 25,
+    "logs": 51,
+    "batches": 8,
+    "avg_gas": 231240,
+    "total_txs": 85,
+    "audit_time_ms": 99,
+    "valid": 48,
+    "corrupt": 0
+  },
+  {
+    "batch_size": 50,
+    "logs": 52,
+    "batches": 8,
+    "avg_gas": 235372,
+    "total_txs": 94,
+    "audit_time_ms": 104,
+    "valid": 49,
+    "corrupt": 0
+  }
+]
